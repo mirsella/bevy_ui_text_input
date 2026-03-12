@@ -76,7 +76,6 @@ pub enum TextInputEdit {
     Undo,
     Redo,
     SelectAll,
-    SetSelection(Selection),
 }
 
 /// apply a single `TextInputEdit` to a text editor buffer
@@ -139,10 +138,7 @@ pub fn apply_text_input_edit(
             editor.action(Action::Drag { x, y });
         }
         TextInputEdit::Scroll { lines } => {
-            let line_height = editor.with_buffer(|buffer| buffer.metrics().line_height);
-            editor.action(Action::Scroll {
-                pixels: lines as f32 * line_height,
-            });
+            editor.action(Action::Scroll { lines });
         }
         TextInputEdit::Paste(text) => {
             if max_chars.is_none_or(|max| editor.with_buffer(buffer_len) + text.len() <= max) {
@@ -169,9 +165,6 @@ pub fn apply_text_input_edit(
         }
         TextInputEdit::Enter => {
             editor.action(Action::Enter);
-        }
-        TextInputEdit::SetSelection(selection) => {
-            editor.set_selection(selection);
         }
     }
 
