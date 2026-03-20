@@ -24,6 +24,7 @@ use bevy::math::Vec2;
 use bevy::render::sync_world::TemporaryRenderEntity;
 use bevy::render::Extract;
 use bevy::sprite::BorderRect;
+use bevy::sprite_render::ExtractedTextEffect;
 use bevy::text::TextColor;
 use bevy::ui::CalculatedClip;
 use bevy::ui::ComputedNode;
@@ -194,6 +195,7 @@ pub fn extract_text_input_nodes(
                 color: color_out,
                 translation: *position,
                 rect,
+                effect: ExtractedTextEffect::text(None, None),
             });
 
             extracted_uinodes.uinodes.push(ExtractedUiNode {
@@ -333,6 +335,7 @@ pub fn extract_text_input_prompts(
                 color,
                 translation: *position,
                 rect,
+                effect: ExtractedTextEffect::text(None, None),
             });
             extracted_uinodes.uinodes.push(ExtractedUiNode {
                 z_order: uinode.stack_index() as f32 + stack_z_offsets::TEXT,

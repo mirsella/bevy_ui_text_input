@@ -23,6 +23,7 @@ use bevy::platform::collections::HashMap;
 use bevy::text::Font;
 use bevy::text::FontAtlasSet;
 use bevy::text::FontSmoothing;
+use bevy::text::GlyphAtlasInfo;
 use bevy::text::LineBreak;
 use bevy::text::LineHeight;
 use bevy::text::TextBounds;
@@ -41,6 +42,8 @@ pub struct TextInputPipeline {
     pub font_system: cosmic_text::FontSystem,
     pub(crate) swash_cache: cosmic_text::SwashCache,
     pub(crate) font_atlas_sets: HashMap<AssetId<Font>, FontAtlasSet>,
+    pub(crate) glyph_atlas_info_cache:
+        HashMap<(AssetId<Font>, cosmic_text::CacheKey, FontSmoothing), GlyphAtlasInfo>,
 }
 
 impl Default for TextInputPipeline {
@@ -52,6 +55,7 @@ impl Default for TextInputPipeline {
             font_system: cosmic_text::FontSystem::new_with_locale_and_db(locale, db),
             swash_cache: cosmic_text::SwashCache::new(),
             font_atlas_sets: Default::default(),
+            glyph_atlas_info_cache: Default::default(),
         }
     }
 }
@@ -244,26 +248,33 @@ pub fn text_input_system(
                                 font_system,
                                 swash_cache,
                                 font_atlas_sets,
+                                glyph_atlas_info_cache,
                                 ..
                             } = &mut *text_input_pipeline;
 
                             let font_atlas_set = font_atlas_sets.entry(font_id).or_default();
 
                             let physical_glyph = layout_glyph.physical((0., 0.), 1.);
+                            let glyph_cache_key = (font_id, physical_glyph.cache_key, font_smoothing);
 
-                            let atlas_info = font_atlas_set
-                                .get_glyph_atlas_info(physical_glyph.cache_key, font_smoothing)
-                                .map(Ok)
-                                .unwrap_or_else(|| {
-                                    font_atlas_set.add_glyph_to_atlas(
-                                        &mut texture_atlases,
-                                        &mut textures,
-                                        font_system,
-                                        swash_cache,
-                                        layout_glyph,
-                                        font_smoothing,
-                                    )
-                                })?;
+                            let atlas_info = if let Some(atlas_info) =
+                                glyph_atlas_info_cache.get(&glyph_cache_key).cloned()
+                            {
+                                atlas_info
+                            } else {
+                                let atlas_info = font_atlas_set.add_glyph_to_atlas(
+                                    &mut texture_atlases,
+                                    &mut textures,
+                                    font_system,
+                                    swash_cache,
+                                    layout_glyph,
+                                    font_smoothing,
+                                    false,
+                                    None,
+                                )?;
+                                glyph_atlas_info_cache.insert(glyph_cache_key, atlas_info.clone());
+                                atlas_info
+                            };
 
                             let texture_atlas =
                                 texture_atlases.get(atlas_info.texture_atlas).unwrap();
@@ -452,26 +463,33 @@ pub fn text_input_prompt_system(
                             font_system,
                             swash_cache,
                             font_atlas_sets,
+                            glyph_atlas_info_cache,
                             ..
                         } = &mut *text_input_pipeline;
 
                         let font_atlas_set = font_atlas_sets.entry(font_id).or_default();
 
                         let physical_glyph = layout_glyph.physical((0., 0.), 1.);
+                        let glyph_cache_key = (font_id, physical_glyph.cache_key, font_smoothing);
 
-                        let atlas_info = font_atlas_set
-                            .get_glyph_atlas_info(physical_glyph.cache_key, font_smoothing)
-                            .map(Ok)
-                            .unwrap_or_else(|| {
-                                font_atlas_set.add_glyph_to_atlas(
-                                    &mut texture_atlases,
-                                    &mut textures,
-                                    font_system,
-                                    swash_cache,
-                                    layout_glyph,
-                                    font_smoothing,
-                                )
-                            })?;
+                        let atlas_info = if let Some(atlas_info) =
+                            glyph_atlas_info_cache.get(&glyph_cache_key).cloned()
+                        {
+                            atlas_info
+                        } else {
+                            let atlas_info = font_atlas_set.add_glyph_to_atlas(
+                                &mut texture_atlases,
+                                &mut textures,
+                                font_system,
+                                swash_cache,
+                                layout_glyph,
+                                font_smoothing,
+                                false,
+                                None,
+                            )?;
+                            glyph_atlas_info_cache.insert(glyph_cache_key, atlas_info.clone());
+                            atlas_info
+                        };
 
                         let texture_atlas = texture_atlases.get(atlas_info.texture_atlas).unwrap();
                         let location = atlas_info.location;
@@ -527,6 +545,9 @@ pub fn remove_dropped_font_atlas_sets_from_text_input_pipeline(
     for event in font_events.read() {
         if let AssetEvent::Removed { id } = event {
             text_input_pipeline.font_atlas_sets.remove(id);
+            text_input_pipeline
+                .glyph_atlas_info_cache
+                .retain(|(font_id, _, _), _| font_id != id);
         }
     }
 }

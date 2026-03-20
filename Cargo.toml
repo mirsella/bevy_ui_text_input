@@ -127,3 +127,6 @@ inherits = "dev"
 
 [profile.ci.package."*"]
 opt-level = 0
+
+[patch.crates-io]
+bevy = { git = "https://github.com/mirsella/bevy", branch = "release-0.17.3" }
