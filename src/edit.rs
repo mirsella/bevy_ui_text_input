@@ -520,10 +520,8 @@ pub fn queue_text_input_action(
                         }
                     }
                 }
-                Key::Insert => {
-                    if !*shift_pressed {
-                        *overwrite_mode = !*overwrite_mode;
-                    }
+                Key::Insert if !*shift_pressed => {
+                    *overwrite_mode = !*overwrite_mode;
                 }
                 _ => {}
             }

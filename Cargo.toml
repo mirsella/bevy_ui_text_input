@@ -98,7 +98,7 @@ version = "0.3.2"
 [dev-dependencies.bevy]
 version = "0.17"
 
-[target."cfg(any(windows, all(unix, not(target_os = \"android\"), not(target_os = \"ios\"))))".dependencies.arboard]
+[target.'cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))'.dependencies.arboard]
 version = "3.6.1"
 default-features = false
 

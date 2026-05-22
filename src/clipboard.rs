@@ -41,11 +41,11 @@ impl ClipboardRead {
 }
 
 /// Resource providing access to the clipboard
-#[cfg(all(unix, not(target_os = "android"), not(target_os = "ios")))]
+#[cfg(any(target_os = "linux", target_os = "macos"))]
 #[derive(Resource)]
 pub struct Clipboard(Option<arboard::Clipboard>);
 
-#[cfg(all(unix, not(target_os = "android"), not(target_os = "ios")))]
+#[cfg(any(target_os = "linux", target_os = "macos"))]
 impl Default for Clipboard {
     fn default() -> Self {
         Self(arboard::Clipboard::new().ok())
@@ -53,7 +53,7 @@ impl Default for Clipboard {
 }
 
 /// Resource providing access to the clipboard
-#[cfg(not(all(unix, not(target_os = "android"), not(target_os = "ios"))))]
+#[cfg(not(any(target_os = "linux", target_os = "macos")))]
 #[derive(Resource, Default)]
 pub struct Clipboard;
 
@@ -62,7 +62,7 @@ impl Clipboard {
     ///
     /// On Windows and Unix `ClipboardRead`s are completed instantly, on wasm32 the result is fetched asynchronously.
     pub fn fetch_text(&mut self) -> ClipboardRead {
-        #[cfg(all(unix, not(target_os = "android"), not(target_os = "ios")))]
+        #[cfg(any(target_os = "linux", target_os = "macos"))]
         {
             ClipboardRead::Ready(if let Some(clipboard) = self.0.as_mut() {
                 clipboard.get_text().map_err(ClipboardError::from)
@@ -100,7 +100,8 @@ impl Clipboard {
         }
 
         #[cfg(not(any(
-            all(unix, not(target_os = "android"), not(target_os = "ios")),
+            target_os = "linux",
+            target_os = "macos",
             windows,
             target_arch = "wasm32"
         )))]
@@ -118,7 +119,7 @@ impl Clipboard {
         &mut self,
         text: T,
     ) -> Result<(), ClipboardError> {
-        #[cfg(all(unix, not(target_os = "android"), not(target_os = "ios")))]
+        #[cfg(any(target_os = "linux", target_os = "macos"))]
         {
             if let Some(clipboard) = self.0.as_mut() {
                 clipboard.set_text(text).map_err(ClipboardError::from)
@@ -148,7 +149,8 @@ impl Clipboard {
         }
 
         #[cfg(not(any(
-            all(unix, not(target_os = "android"), not(target_os = "ios")),
+            target_os = "linux",
+            target_os = "macos",
             windows,
             target_arch = "wasm32"
         )))]
@@ -185,7 +187,7 @@ pub enum ClipboardError {
     },
 }
 
-#[cfg(any(windows, all(unix, not(target_os = "android"), not(target_os = "ios"))))]
+#[cfg(any(target_os = "linux", target_os = "macos", windows))]
 impl From<arboard::Error> for ClipboardError {
     fn from(value: arboard::Error) -> Self {
         match value {
