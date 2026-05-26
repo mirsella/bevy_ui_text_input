@@ -1,4 +1,3 @@
-use crate::edit::is_buffer_empty;
 use crate::TextInputBuffer;
 use crate::TextInputGlyph;
 use crate::TextInputLayoutInfo;
@@ -6,6 +5,7 @@ use crate::TextInputNode;
 use crate::TextInputPrompt;
 use crate::TextInputPromptLayoutInfo;
 use crate::TextInputStyle;
+use crate::edit::is_buffer_empty;
 use bevy::asset::AssetId;
 use bevy::asset::Assets;
 use bevy::camera::visibility::InheritedVisibility;
@@ -21,8 +21,8 @@ use bevy::input_focus::InputFocus;
 use bevy::math::Affine2;
 use bevy::math::Rect;
 use bevy::math::Vec2;
-use bevy::render::sync_world::TemporaryRenderEntity;
 use bevy::render::Extract;
+use bevy::render::sync_world::TemporaryRenderEntity;
 use bevy::sprite::BorderRect;
 use bevy::sprite_render::ExtractedTextEffect;
 use bevy::text::TextColor;
@@ -31,13 +31,13 @@ use bevy::ui::ComputedNode;
 use bevy::ui::ComputedUiTargetCamera;
 use bevy::ui::ResolvedBorderRadius;
 use bevy::ui::UiGlobalTransform;
-use bevy::ui_render::stack_z_offsets;
 use bevy::ui_render::ExtractedGlyph;
 use bevy::ui_render::ExtractedUiItem;
 use bevy::ui_render::ExtractedUiNode;
 use bevy::ui_render::ExtractedUiNodes;
 use bevy::ui_render::NodeType;
 use bevy::ui_render::UiCameraMap;
+use bevy::ui_render::stack_z_offsets;
 use cosmic_text::Edit;
 
 pub fn extract_text_input_nodes(

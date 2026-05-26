@@ -202,8 +202,10 @@ pub fn text_input_system(
         } = &mut *editor;
 
         if editor.redraw() {
-            layout_info.glyphs.clear();
-            selection_rects.clear();
+            let mut next_size = Vec2::ZERO;
+            let mut next_glyphs = Vec::new();
+            let mut next_selection_rects = Vec::new();
+            let mut atlas_changed = false;
 
             let result = editor.with_buffer_mut(|buffer| {
                 let box_size = buffer_dimensions(buffer);
@@ -215,7 +217,7 @@ pub fn text_input_system(
                         let y1 = y0 + run.line_height;
                         let x1 = x0 + w;
                         let r = Rect::new(x0, y0, x1, y1);
-                        selection_rects.push(r);
+                        next_selection_rects.push(r);
                     }
 
                     run.glyphs
@@ -255,7 +257,8 @@ pub fn text_input_system(
                             let font_atlas_set = font_atlas_sets.entry(font_id).or_default();
 
                             let physical_glyph = layout_glyph.physical((0., 0.), 1.);
-                            let glyph_cache_key = (font_id, physical_glyph.cache_key, font_smoothing);
+                            let glyph_cache_key =
+                                (font_id, physical_glyph.cache_key, font_smoothing);
 
                             let atlas_info = if let Some(atlas_info) =
                                 glyph_atlas_info_cache.get(&glyph_cache_key).cloned()
@@ -272,6 +275,7 @@ pub fn text_input_system(
                                     false,
                                     None,
                                 )?;
+                                atlas_changed = true;
                                 glyph_atlas_info_cache.insert(glyph_cache_key, atlas_info.clone());
                                 atlas_info
                             };
@@ -300,7 +304,7 @@ pub fn text_input_system(
                                 byte_length: layout_glyph.end - layout_glyph.start,
                                 line_index: line_i,
                             };
-                            layout_info.glyphs.push(pos_glyph);
+                            next_glyphs.push(pos_glyph);
                             Ok(())
                         })
                 });
@@ -308,7 +312,7 @@ pub fn text_input_system(
                 // Check result.
                 result?;
 
-                layout_info.size = box_size;
+                next_size = box_size;
                 Ok(())
             });
 
@@ -320,6 +324,13 @@ pub fn text_input_system(
                     panic!("Fatal error when processing text: {e}.");
                 }
                 Ok(()) => {
+                    if atlas_changed {
+                        continue;
+                    }
+
+                    layout_info.size = next_size;
+                    layout_info.glyphs = next_glyphs;
+                    *selection_rects = next_selection_rects;
                     layout_info.size.x *= node.inverse_scale_factor();
                     layout_info.size.y *= node.inverse_scale_factor();
                     editor.set_redraw(false);
